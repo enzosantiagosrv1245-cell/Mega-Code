@@ -405,4 +405,4 @@ function parseDuration(str) {
     return parseInt(match[1]) * units[match[2]];
 }
 
-client.login('SEU_TOKEN_AQUI');
+client.login(process.env.TOKEN);
