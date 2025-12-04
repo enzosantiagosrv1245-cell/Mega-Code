@@ -38,13 +38,13 @@ client.on('messageCreate', async message => {
             .setTitle('📚 Comandos do Bot Mega Code')
             .setDescription('Aqui estão todos os comandos disponíveis:')
             .addFields(
-                { name: '💻 Programação', value: '`!analisar <código>` - Analisa código\n`!executar <código>` - Executa JavaScript\n`!docs <termo>` - Busca documentação' },
-                { name: '🛡️ Moderação', value: '`!ban @user` - Banir membro\n`!kick @user` - Expulsar membro\n`!timeout @user <tempo>` - Silenciar\n`!warn @user <motivo>` - Advertir\n`!limpar <quantidade>` - Deletar mensagens' },
-                { name: '🎮 Diversão', value: '`!ping` - Ver latência\n`!avatar [@user]` - Ver avatar\n`!serverinfo` - Info do servidor\n`!userinfo [@user]` - Info do usuário' },
-                { name: '📊 Utilidades', value: '`!enquete <pergunta>` - Criar enquete\n`!nivel [@user]` - Ver XP/nível\n`!ranking` - Top 10 usuários\n`!lembrar <tempo> <mensagem>` - Lembrete' },
-                { name: '🎲 Jogos', value: '`!dado` - Rolar dado\n`!coinflip` - Cara ou coroa\n`!8ball <pergunta>` - Bola 8 mágica' }
+                { name: '💻 Programação (Todos)', value: '`!analisar <código>` - Analisa código JS/Python\n`!executar <js/py/html/css> <código>` - Executa/mostra código\n`!docs <termo>` - Busca documentação\n`!desafio` - Desafio de programação aleatório\n`!snippet <tema>` - Snippets úteis de código' },
+                { name: '🛡️ Moderação (Admin)', value: '`!ban @user` - Banir membro\n`!kick @user` - Expulsar membro\n`!timeout @user <tempo>` - Silenciar\n`!warn @user <motivo>` - Advertir\n`!limpar <quantidade>` - Deletar mensagens\n`!locks` - Bloquear/desbloquear canal\n`!slowmode <segundos>` - Modo lento no canal' },
+                { name: '👑 Dono (Apenas Owner)', value: '`!shutdown` - Desligar bot\n`!setstatus <status>` - Mudar status do bot\n`!eval <código>` - Avaliar código JS direto' },
+                { name: '🎮 Diversão (Todos)', value: '`!ping` - Ver latência\n`!avatar [@user]` - Ver avatar\n`!serverinfo` - Info do servidor\n`!userinfo [@user]` - Info do usuário\n`!dado` - Rolar dado\n`!coinflip` - Cara ou coroa\n`!8ball <pergunta>` - Bola 8 mágica' },
+                { name: '📊 Utilidades (Todos)', value: '`!enquete <pergunta>` - Criar enquete\n`!nivel [@user]` - Ver XP/nível\n`!ranking` - Top 10 usuários\n`!lembrar <tempo> <mensagem>` - Lembrete\n`!calc <expressão>` - Calculadora\n`!color <hex>` - Preview de cor' }
             )
-            .setFooter({ text: 'Mega Code Bot' })
+            .setFooter({ text: 'Mega Code Bot | Use ! antes dos comandos' })
             .setTimestamp();
         
         message.reply({ embeds: [embed] });
@@ -55,42 +55,57 @@ client.on('messageCreate', async message => {
         if (!code) return message.reply('❌ Você precisa fornecer um código para analisar!');
 
         const issues = [];
+        let lang = 'javascript';
         
-        if (code.includes('cons t') || code.includes('le t') || code.includes('va r')) {
-            issues.push('🔴 **Erro de sintaxe**: Espaço entre declaração de variável (const, let, var)');
+        if (code.includes('print(') || code.includes('def ') || code.includes('import ')) {
+            lang = 'python';
         }
-        if (code.match(/const\s+\w+\s*=(?!\s*\()/g) && code.includes('const') && !code.includes(';')) {
-            issues.push('🟡 **Aviso**: Faltando ponto e vírgula no final da declaração');
+
+        if (lang === 'javascript') {
+            if (code.includes('cons t') || code.includes('le t') || code.includes('va r')) {
+                issues.push('🔴 **Erro de sintaxe**: Espaço entre declaração de variável (const, let, var)');
+            }
+            if (code.match(/const\s+\w+\s*=(?!\s*\()/g) && code.includes('const') && !code.includes(';')) {
+                issues.push('🟡 **Aviso**: Faltando ponto e vírgula no final da declaração');
+            }
+            if (code.includes('==') && !code.includes('===')) {
+                issues.push('🟡 **Recomendação**: Use === ao invés de == para comparação estrita');
+            }
+            if (code.match(/function\s+\w+\s*\([^)]*\)\s*{[^}]*}/g) && !code.includes('return')) {
+                issues.push('🟡 **Aviso**: Função sem retorno explícito');
+            }
+            if (code.includes('var ')) {
+                issues.push('🟡 **Recomendação**: Prefira usar const ou let ao invés de var');
+            }
+            if (code.includes('await') && !code.includes('async')) {
+                issues.push('🔴 **Erro**: Uso de await sem função async');
+            }
+            if (code.includes('console.log(amigos)') && !code.includes('const amigos')) {
+                issues.push('🔴 **Erro**: Variável "amigos" não está definida');
+            }
+        } else if (lang === 'python') {
+            if (code.includes('prin t(') || code.includes('de f ')) {
+                issues.push('🔴 **Erro de sintaxe**: Espaço em palavra-chave do Python');
+            }
+            if (!code.match(/^\s{4}|\t/m) && (code.includes('def ') || code.includes('if ') || code.includes('for '))) {
+                issues.push('🟡 **Aviso**: Python usa indentação (4 espaços ou tab)');
+            }
+            if (code.includes('print(') && !code.match(/print\(.+\)/)) {
+                issues.push('🔴 **Erro**: print() com sintaxe incorreta');
+            }
         }
-        if (code.includes('==') && !code.includes('===')) {
-            issues.push('🟡 **Recomendação**: Use === ao invés de == para comparação estrita');
-        }
-        if (code.match(/function\s+\w+\s*\([^)]*\)\s*{[^}]*}/g) && !code.includes('return')) {
-            issues.push('🟡 **Aviso**: Função sem retorno explícito');
-        }
-        if (code.includes('var ')) {
-            issues.push('🟡 **Recomendação**: Prefira usar const ou let ao invés de var');
-        }
-        if (code.match(/{\s*[^}]+\s*}/g) && !code.match(/{\s*\n/g)) {
-            issues.push('🔵 **Estilo**: Considere adicionar quebras de linha para melhor legibilidade');
-        }
-        if (code.includes('console.log') && code.split('console.log').length > 3) {
-            issues.push('🟡 **Debug**: Muitos console.log detectados, lembre-se de removê-los em produção');
-        }
+
         if (code.match(/\(/g) && code.match(/\)/g) && code.match(/\(/g).length !== code.match(/\)/g).length) {
             issues.push('🔴 **Erro**: Parênteses não balanceados');
         }
         if (code.match(/{/g) && code.match(/}/g) && code.match(/{/g).length !== code.match(/}/g).length) {
             issues.push('🔴 **Erro**: Chaves não balanceadas');
         }
-        if (code.includes('await') && !code.includes('async')) {
-            issues.push('🔴 **Erro**: Uso de await sem função async');
-        }
 
         const embed = new EmbedBuilder()
             .setColor(issues.length === 0 ? '#00ff00' : '#ff0000')
-            .setTitle('🔍 Análise de Código')
-            .addFields({ name: '📝 Código Analisado', value: '```javascript\n' + code.slice(0, 1000) + '\n```' });
+            .setTitle(`🔍 Análise de Código (${lang.toUpperCase()})`)
+            .addFields({ name: '📝 Código Analisado', value: '```' + lang + '\n' + code.slice(0, 1000) + '\n```' });
 
         if (issues.length > 0) {
             embed.addFields({ name: '⚠️ Problemas Encontrados', value: issues.join('\n') });
@@ -102,37 +117,60 @@ client.on('messageCreate', async message => {
         message.reply({ embeds: [embed] });
     }
 
-    if (command === 'executar' || command === 'eval') {
-        if (message.author.id !== message.guild.ownerId) {
-            return message.reply('❌ Apenas o dono do servidor pode executar código!');
-        }
+    if (command === 'executar' || command === 'run') {
+        const code = args.slice(1).join(' ');
+        const lang = args[0]?.toLowerCase();
+        
+        if (!lang || !code) return message.reply('❌ Use: !executar <js/py/html/css> <código>');
 
-        const code = args.join(' ');
-        if (!code) return message.reply('❌ Forneça código para executar!');
+        const embed = new EmbedBuilder();
 
-        try {
-            let result = eval(code);
-            if (typeof result !== 'string') result = require('util').inspect(result);
-            
-            const embed = new EmbedBuilder()
-                .setColor('#00ff00')
-                .setTitle('✅ Código Executado')
-                .addFields(
-                    { name: '📥 Input', value: '```javascript\n' + code.slice(0, 1000) + '\n```' },
-                    { name: '📤 Output', value: '```javascript\n' + result.slice(0, 1000) + '\n```' }
-                );
+        if (lang === 'js' || lang === 'javascript') {
+            try {
+                let result = eval(code);
+                if (typeof result !== 'string') result = require('util').inspect(result);
+                
+                embed.setColor('#00ff00')
+                    .setTitle('✅ JavaScript Executado')
+                    .addFields(
+                        { name: '📥 Input', value: '```javascript\n' + code.slice(0, 1000) + '\n```' },
+                        { name: '📤 Output', value: '```javascript\n' + result.slice(0, 1000) + '\n```' }
+                    );
+                
+                message.reply({ embeds: [embed] });
+            } catch (error) {
+                embed.setColor('#ff0000')
+                    .setTitle('❌ Erro JavaScript')
+                    .addFields(
+                        { name: '📥 Input', value: '```javascript\n' + code.slice(0, 1000) + '\n```' },
+                        { name: '⚠️ Erro', value: '```\n' + error.toString().slice(0, 1000) + '\n```' }
+                    );
+                
+                message.reply({ embeds: [embed] });
+            }
+        } else if (lang === 'py' || lang === 'python') {
+            embed.setColor('#3776ab')
+                .setTitle('🐍 Python')
+                .setDescription('⚠️ Execução de Python não disponível no bot. Use https://replit.com ou https://python.org')
+                .addFields({ name: '📥 Seu código', value: '```python\n' + code.slice(0, 1000) + '\n```' });
             
             message.reply({ embeds: [embed] });
-        } catch (error) {
-            const embed = new EmbedBuilder()
-                .setColor('#ff0000')
-                .setTitle('❌ Erro na Execução')
-                .addFields(
-                    { name: '📥 Input', value: '```javascript\n' + code.slice(0, 1000) + '\n```' },
-                    { name: '⚠️ Erro', value: '```javascript\n' + error.toString().slice(0, 1000) + '\n```' }
-                );
+        } else if (lang === 'html') {
+            embed.setColor('#e34c26')
+                .setTitle('🌐 HTML Preview')
+                .setDescription('Código HTML salvo! Copie e cole em um arquivo .html')
+                .addFields({ name: '📥 Código', value: '```html\n' + code.slice(0, 1000) + '\n```' });
             
             message.reply({ embeds: [embed] });
+        } else if (lang === 'css') {
+            embed.setColor('#1572b6')
+                .setTitle('🎨 CSS')
+                .setDescription('Código CSS formatado!')
+                .addFields({ name: '📥 Código', value: '```css\n' + code.slice(0, 1000) + '\n```' });
+            
+            message.reply({ embeds: [embed] });
+        } else {
+            message.reply('❌ Linguagem não suportada! Use: js, py, html, css');
         }
     }
 
@@ -363,6 +401,157 @@ client.on('messageCreate', async message => {
         
         const answer = responses[Math.floor(Math.random() * responses.length)];
         message.reply(`🎱 **Pergunta:** ${question}\n**Resposta:** ${answer}`);
+    }
+
+    if (command === 'shutdown') {
+        if (message.author.id !== message.guild.ownerId) {
+            return message.reply('❌ Apenas o dono do servidor pode desligar o bot!');
+        }
+        
+        await message.reply('👋 Bot desligando...');
+        process.exit(0);
+    }
+
+    if (command === 'setstatus') {
+        if (message.author.id !== message.guild.ownerId) {
+            return message.reply('❌ Apenas o dono do servidor pode mudar o status!');
+        }
+        
+        const status = args.join(' ');
+        if (!status) return message.reply('❌ Forneça um status!');
+        
+        client.user.setActivity(status, { type: 'WATCHING' });
+        message.reply(`✅ Status alterado para: ${status}`);
+    }
+
+    if (command === 'eval') {
+        if (message.author.id !== message.guild.ownerId) {
+            return message.reply('❌ Apenas o dono do servidor pode avaliar código!');
+        }
+
+        const code = args.join(' ');
+        if (!code) return message.reply('❌ Forneça código para avaliar!');
+
+        try {
+            let result = eval(code);
+            if (typeof result !== 'string') result = require('util').inspect(result);
+            message.reply('```javascript\n' + result.slice(0, 1990) + '\n```');
+        } catch (error) {
+            message.reply('```javascript\n' + error.toString().slice(0, 1990) + '\n```');
+        }
+    }
+
+    if (command === 'lock' || command === 'locks') {
+        if (!message.member.permissions.has(PermissionFlagsBits.BanMembers)) {
+            return message.reply('❌ Você precisa ter permissão de banir membros!');
+        }
+
+        const locked = message.channel.permissionsFor(message.guild.roles.everyone).has(PermissionFlagsBits.SendMessages);
+        
+        if (locked) {
+            await message.channel.permissionOverwrites.edit(message.guild.roles.everyone, {
+                SendMessages: false
+            });
+            message.reply('🔒 Canal bloqueado!');
+        } else {
+            await message.channel.permissionOverwrites.edit(message.guild.roles.everyone, {
+                SendMessages: null
+            });
+            message.reply('🔓 Canal desbloqueado!');
+        }
+    }
+
+    if (command === 'slowmode') {
+        if (!message.member.permissions.has(PermissionFlagsBits.BanMembers)) {
+            return message.reply('❌ Você precisa ter permissão de banir membros!');
+        }
+
+        const seconds = parseInt(args[0]);
+        if (isNaN(seconds) || seconds < 0 || seconds > 21600) {
+            return message.reply('❌ Use um número entre 0 e 21600 segundos!');
+        }
+
+        await message.channel.setRateLimitPerUser(seconds);
+        message.reply(`⏱️ Modo lento definido para ${seconds} segundos!`);
+    }
+
+    if (command === 'desafio' || command === 'challenge') {
+        const challenges = [
+            { title: 'FizzBuzz', desc: 'Imprima números de 1 a 100. Para múltiplos de 3 imprima "Fizz", de 5 "Buzz", e de ambos "FizzBuzz"', dif: '⭐ Fácil' },
+            { title: 'Palíndromo', desc: 'Crie uma função que verifica se uma string é um palíndromo', dif: '⭐ Fácil' },
+            { title: 'Fibonacci', desc: 'Gere os primeiros 20 números da sequência de Fibonacci', dif: '⭐⭐ Médio' },
+            { title: 'Ordenação', desc: 'Implemente o algoritmo Bubble Sort', dif: '⭐⭐ Médio' },
+            { title: 'API REST', desc: 'Crie uma API REST simples com 4 rotas CRUD', dif: '⭐⭐⭐ Difícil' },
+            { title: 'Calculadora', desc: 'Crie uma calculadora que aceita operações em string: "2 + 2 * 3"', dif: '⭐⭐ Médio' },
+            { title: 'Busca Binária', desc: 'Implemente busca binária em um array ordenado', dif: '⭐⭐ Médio' },
+            { title: 'Validador de CPF', desc: 'Crie um validador de CPF brasileiro', dif: '⭐⭐ Médio' }
+        ];
+
+        const challenge = challenges[Math.floor(Math.random() * challenges.length)];
+        
+        const embed = new EmbedBuilder()
+            .setColor('#ff6b6b')
+            .setTitle(`🎯 Desafio: ${challenge.title}`)
+            .setDescription(challenge.desc)
+            .addFields({ name: 'Dificuldade', value: challenge.dif })
+            .setFooter({ text: 'Boa sorte! 🚀' });
+        
+        message.reply({ embeds: [embed] });
+    }
+
+    if (command === 'snippet') {
+        const snippets = {
+            'fetch': '```javascript\nfetch("url").then(res => res.json()).then(data => console.log(data));\n```',
+            'async': '```javascript\nconst getData = async () => {\n  const res = await fetch("url");\n  const data = await res.json();\n  return data;\n};\n```',
+            'map': '```javascript\nconst numbers = [1, 2, 3];\nconst doubled = numbers.map(n => n * 2);\n```',
+            'filter': '```javascript\nconst numbers = [1, 2, 3, 4, 5];\nconst evens = numbers.filter(n => n % 2 === 0);\n```',
+            'reduce': '```javascript\nconst numbers = [1, 2, 3, 4];\nconst sum = numbers.reduce((acc, n) => acc + n, 0);\n```',
+            'promise': '```javascript\nconst myPromise = new Promise((resolve, reject) => {\n  if (success) resolve(data);\n  else reject(error);\n});\n```',
+            'class': '```javascript\nclass Person {\n  constructor(name) {\n    this.name = name;\n  }\n  greet() {\n    console.log(`Hi, I\'m ${this.name}`);\n  }\n}\n```'
+        };
+
+        const tema = args[0]?.toLowerCase();
+        if (!tema) {
+            return message.reply('📝 Snippets disponíveis: fetch, async, map, filter, reduce, promise, class');
+        }
+
+        const snippet = snippets[tema];
+        if (!snippet) {
+            return message.reply('❌ Snippet não encontrado! Use: fetch, async, map, filter, reduce, promise, class');
+        }
+
+        message.reply(`📝 **Snippet: ${tema}**\n${snippet}`);
+    }
+
+    if (command === 'calc') {
+        const expression = args.join(' ');
+        if (!expression) return message.reply('❌ Forneça uma expressão matemática!');
+
+        try {
+            const result = eval(expression.replace(/[^0-9+\-*/().]/g, ''));
+            message.reply(`🔢 Resultado: **${result}**`);
+        } catch (error) {
+            message.reply('❌ Expressão inválida!');
+        }
+    }
+
+    if (command === 'color') {
+        const hex = args[0];
+        if (!hex || !hex.match(/^#?[0-9A-Fa-f]{6}$/)) {
+            return message.reply('❌ Use um código hexadecimal válido! Ex: #FF5733 ou FF5733');
+        }
+
+        const color = hex.startsWith('#') ? hex : '#' + hex;
+        
+        const embed = new EmbedBuilder()
+            .setColor(color)
+            .setTitle('🎨 Preview de Cor')
+            .addFields(
+                { name: 'HEX', value: color, inline: true },
+                { name: 'RGB', value: hexToRgb(color), inline: true }
+            );
+        
+        message.reply({ embeds: [embed] });
     }
 
     if (command === 'docs') {
